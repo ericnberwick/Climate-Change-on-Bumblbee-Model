@@ -3,12 +3,14 @@ globals [
   land
   food-distribution
   numTurtles
+  numParasites
   temperature
   season
   month
   year
   qX
   qY
+  annualParasites
 ]
 
 ;; Patch Variables
@@ -42,6 +44,7 @@ bees-own [
   survivalPr
   posX
   posY
+  hibernate
 ]
 
 ;; Parasite Variables
@@ -60,16 +63,12 @@ to setup
   ask patches[if pcolor < 200 and pcolor > 50 [set pcolor blue]]
   ask patches[if pcolor < 105 [set pcolor green]]
 
-  ;; set up bees
-  ask n-of 50 patches with [ pcolor = green][sprout-bees 1 [set color yellow set shape "bug"]] ; sproit workers
-  ask n-of 5 patches with [ pcolor = green][sprout-bees 1 [set color blue set shape "bug" set isQueen 1]] ;sprout queens which are blue
-  ask bees [set energy 100]
+
 
   ;; set up flowers
   ask n-of food patches with [ pcolor = green][sprout-flowers 1 [set color pink set shape "flower"]]
 
-  ;; set up parasites
-  ask n-of 20 patches with [ pcolor = green][sprout-parasites 1 [set color red set shape "bug"]]
+
 
   ;; set up monitor variables
   set land count patches with [pcolor = green]
@@ -78,9 +77,23 @@ to setup
   reset-ticks
 end
 
+;; initialize bee and parasite numbers from first spring
+to init
+  ;; set up bees
+  ;;ask n-of 50 patches with [ pcolor = green][sprout-bees 1 [set color yellow set shape "bug"]] ; sproit workers
+  ask n-of 25 patches with [ pcolor = green][sprout-bees 1 [set color blue set shape "bug" set isQueen 1]] ;sprout queens which are blue
+  ask bees [set energy 100]
+  set annualParasites false
+
+
+
+end
 
 ;; Process Overview and Scheduling
 to go
+  if ticks = 60 [init] ;;set up bees from spring
+  if temperature > 10 and annualParasites = false and (ticks mod 365 > 60) [ask n-of 10 patches with [ pcolor = green][sprout-parasites 1 [set color red set shape "bug" set annualParasites true]]]
+  if ticks mod 365 = 364 [set annualParasites false]
   bees-move
   spreadParasite
   useEnergy
@@ -88,15 +101,50 @@ to go
   reproduce
   eggToBee
   set numTurtles count bees
+  set numParasites count parasites
   updateTemp
+  hibernation
+  survive
   tick
+end
+
+;; Bees go into hibernation in Autumn and Come Out in spring
+to hibernation
+  if (ticks mod 365) = 244 [
+    ask bees with [isQueen = 1 ][set hibernate 1 set color 35]
+  ]
+  if (ticks mod 365) > 30 and (temperature > 10  [
+    ask bees with [isQueen = 1 ][set hibernate 0 set color blue]
+  ]
+end
+
+to survive
+
+  if temperature <= -7 [ask bees [die]]
+
+  if temperature <= 5 [
+    ask bees with [hibernate != 1][die]
+  ]
+
+  if temperature >= 45 [
+    ask bees [die]
+  ]
+
+  if temperature >= 40 [
+    ask parasites [die]
+  ]
+
+  if temperature <= 10 [
+    ask parasites [die]
+  ]
+
 end
 
 to updateTemp
   let day (ticks mod 365)
   if day <= 31 [set season "Winter" set temperature -1] ;; january
   if day >= 32 and day <= 59 [set season "Winter" set temperature 1] ;; February
-  if day >= 60 and day <= 90 [set season "Spring" set temperature 5] ;; March
+  if day >= 60 and day <= 90 [set season "Spring" set temperature 7] ;; March
   if day >= 91 and day <= 120 [set season "Spring" set temperature 12] ;; April
   if day >= 121 and day <= 151 [set season "Spring" set temperature 17] ;; May
   if day >= 152 and day <= 181 [set season "Summer" set temperature 22] ;; June
@@ -104,8 +152,8 @@ to updateTemp
   if day >= 213 and day <= 243 [set season "Summer" set temperature 23] ;; August
   if day >= 244 and day <= 273 [set season "Autumn" set temperature 19] ;; Sepetember
   if day >= 274 and day <= 304 [set season "Autumn" set temperature 13] ;; October
-  if day >= 305 and day <= 334 [set season "Autumn" set temperature 2] ;; November
-  if day >= 335 [set season "Winter" set temperature 8] ;; December
+  if day >= 305 and day <= 334 [set season "Autumn" set temperature 5] ;; November
+  if day >= 335 [set season "Winter" set temperature 2] ;; December
 
 end
 
@@ -129,7 +177,7 @@ end
 
 ;; Mark where queen has laid eggs
 to eggCheck
-  ask bees with [isQueen = 1 and energy > 100 and temperature >= 10][
+  ask bees with [isQueen = 1 and energy > 100 and temperature >= 10 and age > 32 and hibernate != 1 and (ticks mod 365) < 243][
      ask patch-at (round posX) (round posY) [set isEggs 1]
   ]
 end
@@ -158,13 +206,13 @@ end
 ;; Update age of every entity and kill entities that are out of lifespan
 to updateAge
   ;; Update ages
-  ask bees [set age age + 1]
+  ask bees with [hibernate != 1] [set age age + 1]
   ask parasites [set age age + 1]
   ask eggs[set age age + 1]
 
   ;; Kill Old Entities
   ask bees with [isQueen != 1 and age > 28][die] ;; kill bees when they get to old
-  ask bees with [isQueen = 1 and age > 40][die] ;; queens live longer than worker bees
+  ask bees with [isQueen = 1 and age > 50 ][die] ;; queens live longer than worker bees
   ;ask parasites with [age > 20][die] ;; kill bees when they get to old
 end
 
@@ -180,7 +228,8 @@ end
 
 ;; Bees Movement
 to bees-move
-  ask bees [
+
+  ask bees with [hibernate != 1] [
     wiggle
     if [pcolor] of patch-ahead 1 = green [
       forward 0.5
@@ -223,10 +272,10 @@ ticks
 30.0
 
 BUTTON
-1554
-1031
-1633
-1067
+1528
+952
+1607
+988
 setup
 setup
 NIL
@@ -240,10 +289,10 @@ NIL
 1
 
 MONITOR
-1548
-688
-1605
-733
+1524
+695
+1581
+740
 land
 land
 17
@@ -251,10 +300,10 @@ land
 11
 
 MONITOR
-1553
-921
-1648
-966
+1525
+798
+1620
+843
 Bee Population
 numTurtles
 17
@@ -262,10 +311,10 @@ numTurtles
 11
 
 BUTTON
-1647
-1031
-1728
-1069
+1621
+952
+1702
+990
 go
 go
 T
@@ -279,47 +328,25 @@ NIL
 1
 
 SLIDER
-1554
-986
-1726
-1019
+1528
+907
+1700
+940
 food
 food
 0
 1000
-525.0
+586.0
 1
 1
 NIL
 HORIZONTAL
 
 MONITOR
-1548
-744
-1606
-789
-queen X
-qX
-17
-1
-11
-
-MONITOR
-1612
-744
-1670
-789
-queen Y
-qY
-17
-1
-11
-
-MONITOR
-1643
-848
-1730
-893
+1618
+747
+1705
+792
 Time OF Year
 season
 17
@@ -327,12 +354,23 @@ season
 11
 
 MONITOR
-1550
-848
-1635
-893
+1525
+747
+1610
+792
 Temperature
 temperature
+17
+1
+11
+
+MONITOR
+1626
+798
+1751
+843
+Parasites Population
+numParasites
 17
 1
 11
