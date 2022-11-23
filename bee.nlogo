@@ -5,12 +5,24 @@ globals [
   numTurtles
   numParasites
   temperature
+  flowerPop
   season
-  month
   year
-  qX
-  qY
   annualParasites
+  annualFlowers
+
+  JanTemp
+  FebTemp
+  MarTemp
+  AprTemp
+  MayTemp
+  JunTemp
+  JulTemp
+  AugTemp
+  SepTemp
+  OctTemp
+  NovTemp
+  DecTemp
 ]
 
 ;; Patch Variables
@@ -21,7 +33,7 @@ patches-own[
 
 ;; Flower Variables
 breed [flowers flower]
-flowers-own[]
+flowers-own[state]
 
 
 ;; Egg Variables
@@ -62,18 +74,24 @@ to setup
   import-pcolors "scot.jpg"
   ask patches[if pcolor < 200 and pcolor > 50 [set pcolor blue]]
   ask patches[if pcolor < 105 [set pcolor green]]
-
-
-
-  ;; set up flowers
-  ask n-of food patches with [ pcolor = green][sprout-flowers 1 [set color pink set shape "flower"]]
-
-
+  set year 2023
 
   ;; set up monitor variables
   set land count patches with [pcolor = green]
   set numTurtles count bees
   set season "Winter"
+  set JanTemp -1
+  set FebTemp 1
+  set MarTemp 7
+  set AprTemp 12
+  set MayTemp 17
+  set JunTemp 22
+  set JulTemp 24
+  set AugTemp 23
+  set SepTemp 19
+  set OctTemp 13
+  set NovTemp 5
+  set DecTemp 2
   reset-ticks
 end
 
@@ -84,7 +102,7 @@ to init
   ask n-of 25 patches with [ pcolor = green][sprout-bees 1 [set color blue set shape "bug" set isQueen 1]] ;sprout queens which are blue
   ask bees [set energy 100]
   set annualParasites false
-
+  set annualFlowers false
 
 
 end
@@ -92,8 +110,12 @@ end
 ;; Process Overview and Scheduling
 to go
   if ticks = 60 [init] ;;set up bees from spring
+  if temperature > 5 and annualFlowers = false [ask n-of food patches with [ pcolor = green][sprout-flowers 1 [set color pink set shape "flower" set state 600 set annualFlowers true]]]
+
   if temperature > 10 and annualParasites = false and (ticks mod 365 > 60) [ask n-of 10 patches with [ pcolor = green][sprout-parasites 1 [set color red set shape "bug" set annualParasites true]]]
+  if ticks mod 365 = 364 [set year year + 1]
   if ticks mod 365 = 364 [set annualParasites false]
+  if ticks mod 365 = 364 [set annualFlowers false]
   bees-move
   spreadParasite
   useEnergy
@@ -102,15 +124,22 @@ to go
   eggToBee
   set numTurtles count bees
   set numParasites count parasites
+  set flowerPop count flowers
   updateTemp
+  updateFlowers
   hibernation
   survive
   tick
 end
 
+to updateFlowers
+  ask flowers with [state <= 0][die]
+
+end
+
 ;; Bees go into hibernation in Autumn and Come Out in spring
 to hibernation
-  if (ticks mod 365) = 244 [
+  if (ticks mod 365) > 244 [
     ask bees with [isQueen = 1 ][set hibernate 1 set color 35]
   ]
   if (ticks mod 365) = 60 [
@@ -124,6 +153,7 @@ to survive
 
   if temperature <= 5 [
     ask bees with [hibernate != 1][die]
+    ask flowers [die]
   ]
 
   if temperature >= 45 [
@@ -136,24 +166,25 @@ to survive
 
   if temperature <= 10 [
     ask parasites [die]
+
   ]
 
 end
 
 to updateTemp
   let day (ticks mod 365)
-  if day <= 31 [set season "Winter" set temperature -1] ;; january
-  if day >= 32 and day <= 59 [set season "Winter" set temperature 1] ;; February
-  if day >= 60 and day <= 90 [set season "Spring" set temperature 7] ;; March
-  if day >= 91 and day <= 120 [set season "Spring" set temperature 12] ;; April
-  if day >= 121 and day <= 151 [set season "Spring" set temperature 17] ;; May
-  if day >= 152 and day <= 181 [set season "Summer" set temperature 22] ;; June
-  if day >= 182 and day <= 212 [set season "Summer" set temperature 24] ;; July
-  if day >= 213 and day <= 243 [set season "Summer" set temperature 23] ;; August
-  if day >= 244 and day <= 273 [set season "Autumn" set temperature 19] ;; Sepetember
-  if day >= 274 and day <= 304 [set season "Autumn" set temperature 13] ;; October
-  if day >= 305 and day <= 334 [set season "Autumn" set temperature 5] ;; November
-  if day >= 335 [set season "Winter" set temperature 2] ;; December
+  if day <= 31 [set season "Winter" set temperature JanTemp] ;; january
+  if day >= 32 and day <= 59 [set season "Winter" set temperature FebTemp] ;; February
+  if day >= 60 and day <= 90 [set season "Spring" set temperature MarTemp] ;; March
+  if day >= 91 and day <= 120 [set season "Spring" set temperature AprTemp] ;; April
+  if day >= 121 and day <= 151 [set season "Spring" set temperature MayTemp] ;; May
+  if day >= 152 and day <= 181 [set season "Summer" set temperature JunTemp] ;; June
+  if day >= 182 and day <= 212 [set season "Summer" set temperature JulTemp] ;; July
+  if day >= 213 and day <= 243 [set season "Summer" set temperature AugTemp] ;; August
+  if day >= 244 and day <= 273 [set season "Autumn" set temperature SepTemp] ;; Sepetember
+  if day >= 274 and day <= 304 [set season "Autumn" set temperature OctTemp] ;; October
+  if day >= 305 and day <= 334 [set season "Autumn" set temperature NovTemp] ;; November
+  if day >= 335 [set season "Winter" set temperature DecTemp] ;; December
 
 end
 
@@ -177,7 +208,7 @@ end
 
 ;; Mark where queen has laid eggs
 to eggCheck
-  ask bees with [isQueen = 1 and energy > 100 and temperature >= 10 and age > 32 and hibernate != 1 and (ticks mod 365) < 243][
+  ask bees with [isQueen = 1 and energy > 80 and temperature >= 10 and age > 30 and hibernate != 1 and (ticks mod 365) < 243][
      ask patch-at (round posX) (round posY) [set isEggs 1]
   ]
 end
@@ -198,6 +229,7 @@ to useEnergy
   ask flowers [
    ask bees-here[
      set energy energy + 10
+      ask flowers-here [set state state - 10]
     ]
   ]
   ask bees with [energy = 0][die]
@@ -272,10 +304,10 @@ ticks
 30.0
 
 BUTTON
-1528
-952
-1607
-988
+1527
+649
+1606
+685
 setup
 setup
 NIL
@@ -311,10 +343,10 @@ numTurtles
 11
 
 BUTTON
-1621
-952
-1702
-990
+1620
+649
+1701
+687
 go
 go
 T
@@ -328,15 +360,15 @@ NIL
 1
 
 SLIDER
-1528
-907
-1700
-940
+1526
+903
+1698
+936
 food
 food
 0
-1000
-586.0
+1500
+1061.0
 1
 1
 NIL
@@ -374,6 +406,46 @@ numParasites
 17
 1
 11
+
+MONITOR
+1525
+850
+1636
+895
+Flower Population
+flowerPop
+17
+1
+11
+
+MONITOR
+1714
+747
+1771
+792
+Year
+year
+17
+1
+11
+
+PLOT
+1539
+951
+1857
+1188
+plot 1
+year
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "set-plot-pen-mode 1\nset-plot-x-range 2023 2073\nplotxy year numTurtles\n\n\n"
 
 @#$#@#$#@
 ## WHAT IS IT?
