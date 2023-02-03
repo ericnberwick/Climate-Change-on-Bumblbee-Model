@@ -12,6 +12,7 @@ globals [
   year
   annualParasites
   annualFlowers
+  annualIslandFlowers
 
   JanTemp
   FebTemp
@@ -38,6 +39,10 @@ patches-own[
 ;; Flower Variables
 breed [flowers flower]
 flowers-own[state]
+
+;; Island Flower Variables
+breed [islandFlowers islandFlower]
+islandFlowers-own[state]
 
 
 ;; Egg Variables
@@ -107,10 +112,28 @@ end
 to init
   ;; set up bees
   ;;ask n-of 50 patches with [ pcolor = green][sprout-bees 1 [set color yellow set shape "bug"]] ; sproit workers
-  ask n-of 25 patches with [ pcolor = green][sprout-bees 1 [set color blue set shape "bug" set isQueen 1]] ;sprout queens which are blue
+  ask n-of 25 patches with [ pcolor = green and pycor > 10][sprout-bees 1 [set color blue set shape "bug" set isQueen 1]] ;sprout queens which are blue
+
+  ; Stornoway
+  ask patches with [ pcolor = green and pxcor = -30 and pycor = 34][sprout-bees 1 [set color blue set shape "bug" set isQueen 1]]
+  ;ask patches with [ pcolor = green and pxcor = -30 and pycor = 35][sprout-bees 1 [set color blue set shape "bug" set isQueen 1]]
+  ;ask patches with [ pcolor = green and pxcor = -31 and pycor = 29][sprout-bees 1 [set color blue set shape "bug" set isQueen 1]]
+  ;ask patches with [ pcolor = green and pxcor = -36 and pycor = 28][sprout-bees 1 [set color blue set shape "bug" set isQueen 1]]
+
+  ; Shetland
+  ask patches with [ pcolor = green and pxcor = 17 and pycor = 59][sprout-bees 1 [set color blue set shape "bug" set isQueen 1]]
+  ;ask patches with [ pcolor = green and pxcor = 17 and pycor = 51][sprout-bees 1 [set color blue set shape "bug" set isQueen 1]]
+  ;ask patches with [ pcolor = green and pxcor = 23 and pycor = 54][sprout-bees 1 [set color blue set shape "bug" set isQueen 1]]
+
+  ; Isle of Mull
+  ask patches with [ pcolor = green and pxcor = -41 and pycor = 18][sprout-bees 1 [set color blue set shape "bug" set isQueen 1]]
+  ;ask patches with [ pcolor = green and pxcor = -42 and pycor = 12][sprout-bees 1 [set color blue set shape "bug" set isQueen 1]]
+
+
   ask bees [set energy 100]
   set annualParasites false
   set annualFlowers false
+  set annualIslandFlowers false
 
 
 end
@@ -122,12 +145,26 @@ to go
   set temperature first data
 
   if ticks = 60 [init] ;;set up bees from spring
-  if temperature > 5 and annualFlowers = false [ask n-of food patches with [ pcolor = green][sprout-flowers 1 [set color pink set shape "flower" set state 600 set annualFlowers true]]]
 
-  if temperature > 10 and annualParasites = false and (ticks mod 365 > 60) [ask n-of 10 patches with [ pcolor = green][sprout-parasites 1 [set color red set shape "bug" set annualParasites true]]]
+  ;main land flowers
+  if temperature > 5 and annualFlowers = false [ask n-of food patches with [ pcolor = green and pycor > 10 and pxcor > -24][sprout-flowers 1 [set color pink set shape "flower" set state 600 set annualFlowers true]]]
+
+  ;stornoway flowers
+  if temperature > 5 and annualIslandFlowers = false [ask n-of 25 patches with [pcolor = green and pxcor > -38 and pxcor < -25 and pycor > 23  and pycor < 42][sprout-flowers 1 [set color blue set shape "flower" set state 3000 set annualIslandFlowers true]]]
+  ;if temperature > 5 and annualFlowers = false [ask patches with [ pcolor = green and pxcor = -30 and pycor = 35][sprout-islandFlowers 1 [set color blue set shape "flower" set state 2200 set annualFlowers true]]]
+  ;if temperature > 5 and annualFlowers = false [ask patches with [ pcolor = green and pxcor = -30 and pycor = 34][sprout-islandFlowers 1 [set color blue set shape "flower" set state 2200 set annualFlowers true]]]
+  ;if temperature > 5 and annualFlowers = false [ask patches with [ pcolor = green and pxcor = -30 and pycor = 33][sprout-islandFlowers 1 [set color blue set shape "flower" set state 2200 set annualFlowers true]]]
+  ;if temperature > 5 and annualFlowers = false [ask patches with [ pcolor = green and pxcor = -30 and pycor = 32][sprout-islandFlowers 1 [set color blue set shape "flower" set state 2200 set annualFlowers true]]]
+  ;if temperature > 5 and annualFlowers = false [ask patches with [ pcolor = green and pxcor = -30 and pycor = 31][sprout-islandFlowers 1 [set color blue set shape "flower" set state 1200 set annualFlowers true]]]
+  ;if temperature > 5 and annualFlowers = false [ask patches with [ pcolor = green and pxcor = -30 and pycor = 37][sprout-islandFlowers 1 [set color blue set shape "flower" set state 2200 set annualFlowers true]]]
+
+
+  if temperature > 10 and annualParasites = false and (ticks mod 365 > 60) [ask n-of 10 patches with [ pcolor = green and pycor > 10][sprout-parasites 1 [set color red set shape "bug" set annualParasites true]]]
   if ticks mod 365 = 364 [set year year + 1]
   if ticks mod 365 = 364 [set annualParasites false]
   if ticks mod 365 = 364 [set annualFlowers false]
+  if ticks mod 365 = 364 [set annualIslandFlowers false]
+  if ticks mod 365 = 364 [ask flowers[die]]
   bees-move
   spreadParasite
   useEnergy
@@ -460,10 +497,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "set-plot-pen-mode 1\nset-plot-x-range 2023 2073\nplotxy year numTurtles\n\n\n"
 
 MONITOR
-1542
-545
-1599
-590
+1529
+508
+1586
+553
 data
 data
 17
