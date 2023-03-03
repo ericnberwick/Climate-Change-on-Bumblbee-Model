@@ -167,6 +167,7 @@ to go
   if ticks mod 365 = 364 [set annualFlowers false]
   if ticks mod 365 = 364 [set annualIslandFlowers false]
   if ticks mod 365 = 364 [ask flowers[die]]
+  ;if ticks mod 365 = 364 [ask parasites[die]]
   bees-move
   spreadParasite
   useEnergy
@@ -362,10 +363,10 @@ ticks
 30.0
 
 BUTTON
-1527
-649
-1606
-685
+1531
+349
+1610
+385
 setup
 setup
 NIL
@@ -379,10 +380,10 @@ NIL
 1
 
 MONITOR
-1524
-695
-1581
-740
+1528
+395
+1585
+440
 land
 land
 17
@@ -390,10 +391,10 @@ land
 11
 
 MONITOR
-1525
-798
-1620
-843
+1529
+498
+1624
+543
 Bee Population
 numTurtles
 17
@@ -401,10 +402,10 @@ numTurtles
 11
 
 BUTTON
-1620
-649
-1701
-687
+1624
+349
+1705
+387
 go
 go
 T
@@ -418,10 +419,10 @@ NIL
 1
 
 SLIDER
-1526
-903
-1698
-936
+1530
+603
+1702
+636
 food
 food
 0
@@ -433,10 +434,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-1621
-697
-1708
-742
+1625
+397
+1712
+442
 Time OF Year
 season
 17
@@ -444,10 +445,10 @@ season
 11
 
 MONITOR
-1525
-747
-1610
-792
+1529
+447
+1614
+492
 Temperature
 temperature
 17
@@ -455,10 +456,10 @@ temperature
 11
 
 MONITOR
-1626
-798
-1751
-843
+1630
+498
+1755
+543
 Parasites Population
 numParasites
 17
@@ -466,10 +467,10 @@ numParasites
 11
 
 MONITOR
-1525
-850
-1636
-895
+1529
+550
+1640
+595
 Flower Population
 flowerPop
 17
@@ -477,10 +478,10 @@ flowerPop
 11
 
 MONITOR
-1717
-697
-1774
-742
+1721
+397
+1778
+442
 Year
 year
 17
@@ -488,10 +489,10 @@ year
 11
 
 PLOT
-1539
-951
-1857
-1188
+1543
+651
+1861
+888
 Population
 year
 NIL
@@ -506,10 +507,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "set-plot-pen-mode 1\nset-plot-x-range 2023 2073\nplotxy year numTurtles\n\n\n"
 
 PLOT
-1541
-1208
-1859
-1411
+1545
+908
+1863
+1111
 Rainfall
 NIL
 NIL
