@@ -1,5 +1,5 @@
 extensions [csv]
-;extensions [thread]
+; final version working
 ;; Global Variables
 globals [
   land
