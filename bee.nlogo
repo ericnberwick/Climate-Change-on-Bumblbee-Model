@@ -1,5 +1,5 @@
 extensions [csv]
-
+;extensions [thread]
 ;; Global Variables
 globals [
   land
@@ -13,7 +13,7 @@ globals [
   annualParasites
   annualFlowers
   annualIslandFlowers
-
+  crlf
   JanTemp
   FebTemp
   MarTemp
@@ -29,7 +29,11 @@ globals [
 
   data
   rain
+  isl1
+  isl2
 ]
+
+;; Entities
 
 ;; Patch Variables
 patches-own[
@@ -81,6 +85,7 @@ parasites-own[
 to setup
   ;; set up map
   clear-all
+  set crlf (word "\r\n")
   import-pcolors "scot.jpg"
   ask patches[if pcolor < 200 and pcolor > 50 [set pcolor blue]]
   ask patches[if pcolor < 105 [set pcolor green]]
@@ -113,7 +118,7 @@ end
 to init
   ;; set up bees
   ;;ask n-of 50 patches with [ pcolor = green][sprout-bees 1 [set color yellow set shape "bug"]] ; sproit workers
-  ask n-of 25 patches with [ pcolor = green and pycor > 10][sprout-bees 1 [set color blue set shape "bug" set isQueen 1]] ;sprout queens which are blue
+  ask n-of 30 patches with [ pcolor = green and pycor > 10][sprout-bees 1 [set color blue set shape "bug" set isQueen 1]] ;sprout queens which are blue
 
   ; Stornoway
   ask patches with [ pcolor = green and pxcor = -30 and pycor = 34][sprout-bees 1 [set color blue set shape "bug" set isQueen 1]]
@@ -141,11 +146,13 @@ end
 
 ;; Process Overview and Scheduling
 to go
-  if file-at-end? [ stop ]
+  ;if ticks > 1460 [outPop "dailyBeePop.csv"]
+  ;if ticks = 1825 [  stop ]
+  if file-at-end? [ stop]
   set data csv:from-row file-read-line
   set temperature first data
   set rain item 1 data
-
+  if ticks mod 365 = 364 [outPop "islandPop.csv"]
   if ticks = 60 [init] ;;set up bees from spring
 
   ;main land flowers
@@ -153,20 +160,21 @@ to go
 
   ;stornoway flowers
   if temperature > 5 and annualIslandFlowers = false [ask n-of 25 patches with [pcolor = green and pxcor > -38 and pxcor < -25 and pycor > 23  and pycor < 42][sprout-flowers 1 [set color blue set shape "flower" set state 3000 set annualIslandFlowers true]]]
-  ;if temperature > 5 and annualFlowers = false [ask patches with [ pcolor = green and pxcor = -30 and pycor = 35][sprout-islandFlowers 1 [set color blue set shape "flower" set state 2200 set annualFlowers true]]]
-  ;if temperature > 5 and annualFlowers = false [ask patches with [ pcolor = green and pxcor = -30 and pycor = 34][sprout-islandFlowers 1 [set color blue set shape "flower" set state 2200 set annualFlowers true]]]
-  ;if temperature > 5 and annualFlowers = false [ask patches with [ pcolor = green and pxcor = -30 and pycor = 33][sprout-islandFlowers 1 [set color blue set shape "flower" set state 2200 set annualFlowers true]]]
-  ;if temperature > 5 and annualFlowers = false [ask patches with [ pcolor = green and pxcor = -30 and pycor = 32][sprout-islandFlowers 1 [set color blue set shape "flower" set state 2200 set annualFlowers true]]]
-  ;if temperature > 5 and annualFlowers = false [ask patches with [ pcolor = green and pxcor = -30 and pycor = 31][sprout-islandFlowers 1 [set color blue set shape "flower" set state 1200 set annualFlowers true]]]
-  ;if temperature > 5 and annualFlowers = false [ask patches with [ pcolor = green and pxcor = -30 and pycor = 37][sprout-islandFlowers 1 [set color blue set shape "flower" set state 2200 set annualFlowers true]]]
 
 
-  if temperature > 10 and annualParasites = false and (ticks mod 365 > 60) [ask n-of 10 patches with [ pcolor = green and pycor > 10][sprout-parasites 1 [set color red set shape "bug" set annualParasites true]]]
+  if temperature > 10 and annualParasites = false and (ticks mod 365 > 60) [ask n-of 7 patches with [ pcolor = green and pycor > 10][sprout-parasites 1 [set color red set shape "bug" set annualParasites true]]]
   if ticks mod 365 = 364 [set year year + 1]
   if ticks mod 365 = 364 [set annualParasites false]
   if ticks mod 365 = 364 [set annualFlowers false]
   if ticks mod 365 = 364 [set annualIslandFlowers false]
   if ticks mod 365 = 364 [ask flowers[die]]
+  ask bees [
+    let close-parasites parasites in-radius 1
+    if any? close-parasites [
+      infectBee
+    ]
+  ]
+  if temperature < -2 [killAll]
   bees-move
   spreadParasite
   useEnergy
@@ -183,11 +191,34 @@ to go
   tick
 end
 
+to countIsland
+  set isl1 count patches with [pcolor = green and pxcor > -42 and pxcor < -22 and pycor > 21  and pycor < 42 and any? bees-here]
+
+end
+
+to outPop [file-name]
+  countIsland
+  let wdata (list (list (isl1)))
+  if file-exists? file-name [
+    let existing-data csv:from-file file-name
+    set wdata (sentence existing-data wdata)
+  ]
+  csv:to-file file-name wdata
+end
+
+
+
+
+
 to rainCheck
   let percentPop numTurtles * 0.1
   let y round percentPop
   if rain = 1 [ask n-of y bees [die]]
 
+end
+
+to killAll
+  ask n-of (count bees * 0.9) bees [  die]
 end
 
 to updateFlowers
@@ -204,6 +235,14 @@ to hibernation
     ask bees with [isQueen = 1 ][set hibernate 0 set color blue]
   ]
 end
+
+
+to infecBee
+  let random-num random 10 + 1
+  if random-num > 6 [ask bees [die]]
+
+end
+
 
 to survive
 
@@ -245,7 +284,9 @@ to updateTemp
   if day >= 335 [set season "Winter" ] ;; December
 
 end
-
+to infectBee
+  let random-num random 10 + 1
+end
 
 
 ;; Evolve eggs to bees
@@ -336,9 +377,9 @@ end
 @#$#@#$#@
 GRAPHICS-WINDOW
 0
-346
+207
 1518
-1865
+1726
 -1
 -1
 10.0
@@ -426,7 +467,7 @@ food
 food
 0
 1500
-1061.0
+1150.0
 1
 1
 NIL
@@ -869,6 +910,16 @@ NetLogo 6.2.2
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
+<experiments>
+  <experiment name="experiment1" repetitions="100" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count bees</metric>
+    <enumeratedValueSet variable="food">
+      <value value="1150"/>
+    </enumeratedValueSet>
+  </experiment>
+</experiments>
 @#$#@#$#@
 @#$#@#$#@
 default

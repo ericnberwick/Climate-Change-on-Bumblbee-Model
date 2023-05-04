@@ -1,8 +1,0 @@
-Params for sustainable
-
-food - 1089
-state - 600
-
-
-queen energy > 80 
-queen age > 30
